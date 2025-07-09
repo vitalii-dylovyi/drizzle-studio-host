@@ -54,6 +54,10 @@ Set an A record in your DNS provider (e.g., Cloudflare, Namecheap):
 ```
 example.com → YOUR_SERVER_IP
 ```
+or you can bypass any external DNS/CDN and test directly against your origin
+```
+echo "127.0.0.1 example.com" | sudo tee -a /etc/hosts
+```
 
 ---
 
