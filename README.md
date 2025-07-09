@@ -107,12 +107,14 @@ Certificates will be stored at:
 ### 4.1 Site Config: `/etc/nginx/sites-available/drizzle.conf`
 
 ```nginx
+# 0)  HTTP  →  HTTPS
 server {
     listen 80;
     server_name example.com;
     return 301 https://$host$request_uri;
 }
 
+# 1)  HTTPS  (UI + API, same origin, Basic-Auth)
 server {
     listen 443 ssl http2;
     server_name example.com;
@@ -120,35 +122,41 @@ server {
     ssl_certificate     /etc/letsencrypt/live/example.com/fullchain.pem;
     ssl_certificate_key /etc/letsencrypt/live/example.com/privkey.pem;
 
+    # ---------- Basic-Auth ----------
     auth_basic           "Drizzle Studio";
     auth_basic_user_file /etc/nginx/.htpasswd;
 
+    # DNS for local.drizzle.studio (used by proxy_pass)
     resolver 1.1.1.1 8.8.8.8 ipv6=off valid=60s;
 
+    # ───────────────────────────────── UI ───────────────────────────
+
+    # A)  root path — GET/HEAD redirect, everything else → back-end
     location = / {
         if ($request_method ~ ^(GET|HEAD)$) {
             return 302 /studio/?host=$host&port=443;
         }
+
+        # POST /, OPTIONS / … → Drizzle back-end
         proxy_pass https://127.0.0.1:4983;
         include snippets/drizzle-proxy-headers.conf;
     }
 
-    location = /studio/ {
-        proxy_pass https://local.drizzle.studio/;
-        include snippets/drizzle-cdn-headers.conf;
-    }
-
+    # B)  every /studio/** file → CDN
     location ^~ /studio/ {
-        rewrite ^/studio/(.*)$ /$1 break;
+        rewrite ^/studio/(.*)$ /$1 break;     # strip /studio/ prefix
         proxy_pass https://local.drizzle.studio;
         include snippets/drizzle-cdn-headers.conf;
     }
 
+    # C)  Cloudflare RUM ping
     location ^~ /cdn-cgi/ {
         proxy_pass https://local.drizzle.studio;
         include snippets/drizzle-cdn-headers.conf;
     }
 
+    # ───────────────────────────── API ─────────────────────────────
+    # everything NOT /studio/** and NOT /cdn-cgi/**  → back-end
     location / {
         proxy_pass https://127.0.0.1:4983;
         include snippets/drizzle-proxy-headers.conf;
