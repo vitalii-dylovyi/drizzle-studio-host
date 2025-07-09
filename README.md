@@ -1,7 +1,7 @@
-# 🟢 Self-hosting Drizzle Studio OSS behind Nginx
+# 🟢 Self-hosting Drizzle Studio using Nginx
 
 I couldn't find any guide to self-host Drizzle Studio, so I figured it out myself—and now I'm sharing it with you pals.
-Here is a step-by-step guide to host Drizzle Studio OSS with:
+Here is a step-by-step guide to host Drizzle Studio with:
 
 * 🔒 Basic Auth
 * 🌐 HTTPS using Let's Encrypt
